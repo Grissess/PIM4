@@ -1,0 +1,74 @@
+PIM4 Vocabulary Reference and Technical Specifications
+======================================================
+(for experienced users)
+
+client->server (C2S)
+--------------------
+
+server-wide commands (target undefined):
+-Mode client=<nick>: queries the modes of the client. Responds with a S2C Mode packet.
+-Mode client=<nick> set=<modenum>: sets the mode of the client. If the client is not referring to self, server operator is required. Some modes require server operator to set on self.
+-Mode client=<nick> unset=<modenum>: Similar to above, but unsets the mode.
+-Create channel=<chname>: creates a channel by the given name, and joins the client to it (sending an S2C Join packet). Returns ERROR.EXISTS if the channel already exists.
+-Delete channel=<chname>: Server operators only; deletes the channel from the server, sending an S2C Part to all clients involved.
+-Bring channel=<chname> client=<nick>: Forcibly brings a client to a channel. The server sends an S2C Join to the affected client.
+-List: Lists all non-secret channels on the server.
+-Kill client=<nick>: Requests that the server kill the named client. Requires server op.
+-MsgAll body=<body>: Sends the textual message to all clients. Requires server op.
+-Sync nick=<nick> ...: Indicates desire to synchronize with the server. Other parameters may be required depending on authentication schemes. This must be done (and succeed) before the client may use any other commands on the server.
+-Desync: Disconnects this client.
+
+channel commands (target=<chname>):
+-Join: requests to join a channel. On success, the server responds with a source-less S2C Join packet to the invoking client, and source-ful Join packets to all other clients on the channel.
+-Part: requests to leave a channel. This never fails, though technically wouldn't work if the user is not in the channel. Replies with an S2C Part packet.
+-Msg body=<body> sonic=<sonic>: requests message delivery. The body is text when sonic is false, or sound data when sonic is true. The channel may deny either or both types of transmission. Will send S2C Msg packets to all other clients, including the incoking one if U mode ECHO is set.
+-Notice body=<body> sonic=<sonic>: Same as Msg.
+-Op client=<nick>: Ops the client on the channel. Requires OP privileges.
+-Deop client=<nick>: Deops the client on the channel. Requires OP privileges.
+-Hop client=<nick>: Half-ops the client on the channel. Requires OP privileges.
+-Dehop client=<nick>: De-half-ops the client on the channel. Requires OP privileges.
+-Kick client=<client>: Removes the client from the channel, forcibly. Requires at least half-OP privileges. Half-ops cannot kick other half-ops or ops. Ops are not restricted by this.
+-Ban client=<client>: Bans the client from the channel, but does not actually remove the client. Restrictions apply as with Kick.
+-Unban client=<client>: Unbans the client from the channel. This command is not restricted to half-ops or ops.
+-List: Lists all clients on the channel.
+-Mode: Lists the modes of the channel.
+-Mode set=<modenum>: Sets the mode on the channel. Requires half-op or op.
+-Mode unset=<modenum>: Same as above, but unsets the mode.
+-Devoice client=<nick>: Devoices a client. Requires half-op or op.
+-Voice client=<nick>: Voices a client. Requires half-op or op.
+
+server->client (S2C)
+--------------------
+
+-Mode client=<nick> list=<modes>: Contains the list of all modes on the client at the time.
+-Mode target=<chname> list=<modes>: Contains the list of all modes on the channel at the time.
+-Mode client=<nick> source=<nick> set=<modenum>: Indicates that the client named source set the indicated mode on the client.
+-Mode target=<chname> source=<nick> set=<modenum>: Indicates that source set the indicated mode on the channel.
+-Mode client=<nick> source=<nick> unset=<modenum>: Similar to above.
+-Mode target=<chname> source=<nick> unset=<modenum>: Similar to above.
+-Join target=<chname>: Sent to join the client to the given channel. The client can receive this at any time, however, it's receipt as part of a sequence other than a C2S Join packet is rare (and brought about by C2S Bring).
+-Join target=<chname> source=<nick>: Indicates that a client has also joined the channel.
+-Part target=<chname>: Sent to part the client from the given channel. The client can receive this at any time; in particular, it is sent during C2S Kick and Delete (when they succeed).
+-Part target=<chname> source=<nick>: Indicates that a client has parted a channel.
+-Delete channel=<chname>: Sent to indicate that the channel was deleted successfully.
+-List list=<channels>: List of all channels on the server (excluding SECRET channels).
+-List target=<chname> list=<client>: List of all users in channel (excluding SECRET users).
+-Unban target=<chname> source=<nick> client=<nick>: Indicates that client was unbanned by source on the target channel.
+-Ban target=<chname> source=<nick> client=<nick>: Indicates that client was banned by source on the target channel.
+-Kick target=<chname> source=<nick> client=<nick>: Indicates that client was kicked by source on the target channel. The client who was kicked will receive this after a S2C Part.
+-Op target=<chname> source=<nick> client=<nick>: Indicates that client was opped on target by source.
+-Deop target=<chname> source=<nick> client=<nick>: Indicates that client was deopped on target by source.
+-Hop target=<chname> source=<nick> client=<nick>: Indicates that client was half-opped on target by source.
+-Dehop target=<chname> source=<nick> client=<nick>: Indicates that client was de-half-opped on target by source.
+-Msg source=<nick> target=<chname/nick> body=<body> sonic=<sonic>: Indicates a message. The target indicates whether the message was sent directly to the user (if it is a nick), or was multicast via a channel (if it is a channel name). The source will always be the originating nick. The body is interpreted to be aural data if sonic is true, or textual data when it is false. The target can be the special character tilde (~) to indicate that the client is to display (or reproduce) the data in any way possible, while indicating that this data is not in the regular channel or user flow.
+-Kill source=<nick>: Indicates that this client is being killed by source.
+-Kill source=<nick> client=<nick>: Indicates that the named client is being killed and removed from the channel (and server).
+-Error code=<code> desc=<desc>: Indicates an error has occured. During synchronization, this should be considered fatal. Otherwise, the error is only transient.
+-Devoice target=<chname> source=<nick> client=<nick>: Indicates that the client is devoiced. The source may be the channel, if C mode MODE.DEVOICED is set.
+-Voice target=<chname> source=<nick> client=<nick>: Indicates that the client has been voiced.
+
+Naming Conventions
+------------------
+
+-Client nicks only ever contain alphabetic characters, digits, and underscores. Special "virtual" usernames will start with a period ".", such as .auth.
+-Channels always start with at-sign or pound-sign (@, #). There is no semantic difference between the two.
