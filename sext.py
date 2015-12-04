@@ -21,6 +21,12 @@ default actions as well.
 import os
 
 class SExtension(object):
+    @property
+    def CANON_NAME(self):
+        raise NotImplementedError('SExtension must define a string .CANON_NAME')
+    @property
+    def VERSION(self):
+        raise NotImplementedError('SExtension must define an integer .VERSION')
     def __init__(self, server):
         self.server=server
     def PreRecvPacket(self, pkt, addr):

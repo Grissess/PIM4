@@ -252,6 +252,7 @@ class Server(object):
         for cl in chn.clients:
             cl.Packet('Part', target=chn.name)
             cl.Packet('Delete', channel=chn.name)
+        self.RemoveChannel(chn)
     def cmd_Bring(self, cli, pkt):
         if not cli.IsSop():
             cli.Error(ERROR.ACCESS, 'You may not use this command.')
@@ -320,7 +321,10 @@ class Server(object):
         e=self.channels.copy()
         for k, v in e.items():
             e[k]={'name': v.name, 'modes': list(v.modes), 'clients': [i.nick for i in v.clients]}
-        cli.Packet('DebugSnapshot', clients=d, channels=e)
+        exts = {}
+        for sext in self.sexts:
+            exts[sext.CANON_NAME] = sext.VERSION
+        cli.Packet('DebugSnapshot', clients=d, channels=e, extensions=exts)
     def cmd_Chicken(self, cli, pkt):
         cli.Msg(SERVER_UNAME, '~', 'What? Chicken butt. Why? Chicken thigh.')
     def cmd_KeepAlive(self, cli, pkt):
@@ -329,6 +333,11 @@ class Server(object):
         cli.Packet('Pong', stime=time.time())
     def cmd_Pong(self, cli, pkt):
         pass #Keep-alive in effect
+    def cmd_SExts(self, cli, pkt):
+        exts = {}
+        for sext in self.sexts:
+            exts[sext.CANON_NAME] = sext.VERSION
+        cli.Packet('SExts', extensions=exts)
 
 if __name__=='__main__':
     print ' PIM4 Server/Broker '.center(79, '*')
@@ -344,7 +353,9 @@ if __name__=='__main__':
     print 'Loading extensions...'
     sexts=[i(serv) for i in LoadExtensions()]
     for sext in sexts:
+        print '\tLoading: %s (version %s)'%(sext.CANON_NAME, sext.VERSION)
         serv.AddSExt(sext)
+    print '(...%d extensions loaded)'%(len(sexts),)
     print 'Starting server threads...'
     serv.Start()
     print 'Starting pump...'

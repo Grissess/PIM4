@@ -15,7 +15,7 @@ from common import ChannelTextCommands
 
 from upp.packet import Packet
 
-class ChannelPlug(Plug, ChannelTextCommands):
+class ChannelPlug(ChannelTextCommands, Plug):
     def __init__(self, app, server, name):
         Plug.__init__(self, app)
         self.server=server

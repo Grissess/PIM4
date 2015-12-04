@@ -24,6 +24,9 @@ class TextCommands(object):
         return True
 
 class ServerTextCommands(TextCommands): #requires .nick, .console
+    def txt_help(self, txt):
+        commands = [i[4:] for i in dir(self) if i.startswith('txt_')]
+        self.console.writeln(appconfig.get('STRS', 'COMMANDS')%{'commands': ','.join(commands)}, FgBgDict(appconfig.get('CLIENT', 'COMMANDS_FG'), appconfig.get('CLIENT', 'COMMANDS_BG')))
     def txt_msg(self, txt):
         parts=shlex.split(txt)
         target=parts[0]
@@ -36,6 +39,8 @@ class ServerTextCommands(TextCommands): #requires .nick, .console
         self.SendTo(Packet('Notice', target=target, body=msg, sonic=False))
     def txt_join(self, txt):
         self.SendTo(Packet('Join', target=txt))
+    def txt_part(self, txt):
+        self.SendTo(Packet('Part', target=txt))
     def txt_create(self, txt):
         self.SendTo(Packet('Create', channel=txt))
     def txt_delete(self, txt):
@@ -92,8 +97,12 @@ class ServerTextCommands(TextCommands): #requires .nick, .console
             self.dead=False
     def txt_dsnap(self, txt):
         self.SendTo(Packet('DebugSnapshot'))
+    def txt_quit(self, txt):
+        self.app.RemPlug(self)
     def OtherTxt(self, txt):
         self.console.writeln(appconfig.get('STRS', 'UNREC')%{'object': 'command'}, FgBgDict(appconfig.get('CLIENT', 'UNREC_FG'), appconfig.get('CLIENT', 'UNREC_BG')))
+    def NoncmdTxt(self, txt):
+        self.console.writeln(appconfig.get('STRS', 'NOTSUPP')%{'act': 'non-command text to server'}, FgBgDict(appconfig.get('CLIENT', 'NOTSUPP_FG'), appconfig.get('CLIENT', 'NOTSUPP_BG')))
 
 class ChannelTextCommands(ServerTextCommands): #requires .server, .name, .console
     def txt_kick(self, txt):
@@ -135,6 +144,10 @@ class ChannelTextCommands(ServerTextCommands): #requires .server, .name, .consol
         self.server.SendTo(Packet('Notice', target=target, body=msg, sonic=False))
     def txt_join(self, txt):
         self.server.SendTo(Packet('Join', target=txt))
+    def txt_part(self, txt):
+        if not txt:
+            txt = self.name
+        self.server.SendTo(Packet('Part', target=txt))
     def txt_create(self, txt):
         self.server.SendTo(Packet('Create', channel=txt))
     def txt_delete(self, txt):
@@ -183,3 +196,5 @@ class ChannelTextCommands(ServerTextCommands): #requires .server, .name, .consol
                 self.server.SendTo(Packet('Mode', client=parts[0], unset=mode))
             else:
                 self.server.SendTo(Packet('Mode', target=parts[0], unset=mode))
+    def txt_quit(self, txt):
+        self.app.RemPlug(self.server)

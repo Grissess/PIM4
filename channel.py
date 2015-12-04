@@ -113,6 +113,9 @@ class Channel(object):
         for mode in MODE.UNSETONPART:
             self.ucmodes.Unset(mode, cli.nick)
         cli.Packet('Part', target=self.name)
+        # If this was the last user and the channel isn't permanent, delete this channel.
+        if (not self.clients) and not self.modes.Check(MODE.PERMANENT):
+            self.server.RemoveChannel(self)
     def cmd_Msg(self, cli, pkt):
         if not cli.IsSop():
             if self.TestDevoiced(cli):

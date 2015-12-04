@@ -25,7 +25,7 @@ from plx_user import UserPlug
 
 KA_TIME=10000
 
-class ServerPlug(Plug, ServerTextCommands):
+class ServerPlug(ServerTextCommands, Plug):
     def __init__(self, app, addr, nick):
         Plug.__init__(self, app)
         self.addr=addr
@@ -195,6 +195,9 @@ class ServerPlug(Plug, ServerTextCommands):
             self.console.writeln(appconfig.get('STRS', 'DSNAP_CHAN_CLIENTS'), FgBgDict(appconfig.get('CLIENT', 'DSNAP_CHAN_CLIENTS_FG'), appconfig.get('CLIENT', 'DSNAP_CHAN_CLIENTS_BG')))
             for client in v['clients']:
                 self.console.writeln(appconfig.get('STRS', 'DSNAP_CHAN_CLIENT')%{'client': client}, FgBgDict(appconfig.get('CLIENT', 'DSNAP_CHAN_CLIENT_FG'), appconfig.get('CLIENT', 'DSNAP_CHAN_CLIENT_BG')))
+        self.console.writeln(appconfig.get('STRS', 'DSNAP_EXTENSIONS'), FgBgDict(appconfig.get('CLIENT', 'DSNAP_EXTENSIONS_FG'), appconfig.get('CLIENT', 'DSNAP_EXTENSIONS_BG')))
+        for ename, ever in pkt.extensions.iteritems():
+            self.console.writeln(appconfig.get('STRS', 'DSNAP_EXTENSION')%{'name': ename, 'version': ever}, FgBgDict(appconfig.get('CLIENT', 'DSNAP_EXTENSION_FG'), appconfig.get('CLIENT', 'DSNAP_EXTENSION_BG')))
         self.app.AlertPlug(self)
     def cmd_Ping(self, pkt, addr):
         if addr!=self.addr:
